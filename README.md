@@ -395,7 +395,78 @@ NEXT_PUBLIC_HORIZON_URL=https://horizon-testnet.stellar.org
 
 ---
 
-## Design Decisions
+## Why Lumenpact for the Stellar Ecosystem
+
+Stellar is fast, cheap, and built for real financial utility — but most consumer apps on Stellar are about sending money. Lumenpact brings a new use case: **locking money as a commitment mechanism**, which is a fundamentally different and underexplored primitive on the network.
+
+### Impact on Stellar
+
+**New user onboarding pathway.** Lumenpact is designed for people who have never used a blockchain product. The pitch — "stake XLM on your goals" — is intuitive without requiring any knowledge of DeFi, wallets, or smart contracts. Every new user who creates a commitment is a new Stellar wallet user.
+
+**Demonstrates Soroban's real-world utility.** Commitment contracts are a category that exists in web2 (Beeminder, StickK) but has never been done trustlessly. Lumenpact shows what Soroban can do that no centralized app can — enforce a financial outcome without a middleman.
+
+**Drives XLM usage beyond payments.** Every commitment locks real XLM on-chain. The more commitments created, the more XLM is actively used as collateral — a direct contribution to network activity and token utility.
+
+**Open architecture for the ecosystem.** The `commitment_escrow` contract is designed to be composable. Future integrations could include Stellar-native USDC stakes, DeFi yield on locked stakes (via Blend Protocol), or oracle-verified goals triggered by on-chain events.
+
+### Why Open Source Contributors Will Want to Work on This
+
+Lumenpact is built to be contributor-friendly from day one:
+
+- **Small, independent contracts** — the `commitment_escrow` contract is a single file with clean separation of concerns. A new Soroban developer can read the entire contract in 20 minutes and understand every function.
+- **Clear roadmap with scoped issues** — v1.5 (evidence submission) and v2 (oracle verification) are already designed and documented. Contributors know exactly what the next milestone looks like.
+- **Frontend and contract work available** — contributors can work on Rust/Soroban contract features OR Next.js frontend components. Both tracks are open and well-documented.
+- **Real users waiting** — this is not a demo project. We have real people who want to use this. Contributors can see their work in production quickly.
+
+---
+
+## Open Source Contribution Guide
+
+We welcome contributions at every level — from fixing typos to shipping new contract features.
+
+### Good First Issues
+
+| Issue | Difficulty | Skills |
+|-------|-----------|--------|
+| Add unit tests for `cancel()` function | Beginner | Rust |
+| Add unit tests for `resolve()` function | Beginner | Rust |
+| Build `CommitmentCard` frontend component | Beginner | React/TypeScript |
+| Add deadline countdown timer component | Beginner | React/TypeScript |
+| Improve error messages in contract | Beginner | Rust |
+| Add mobile responsive navigation | Beginner | Tailwind CSS |
+| Write `get_commitment` integration test | Intermediate | Rust/Soroban |
+| Build Judge Inbox page | Intermediate | React/Next.js |
+| Add evidence URL submission UI | Intermediate | React/TypeScript |
+
+### How to Contribute
+
+```bash
+# Fork the repo
+git clone https://github.com/LumenpactHQ/lumenpact.git
+cd lumenpact
+
+# Create a branch
+git checkout -b feat/your-feature
+
+# Build contracts
+cd contracts && stellar contract build
+
+# Run frontend
+cd frontend && npm install && npm run dev
+
+# Open a PR to main
+```
+
+### Contribution Standards
+
+- Contract functions must have at least one test
+- Frontend components must be typed (no `any`)
+- Follow the existing code structure — don't reorganize without discussion
+- Open an issue before starting large features
+
+---
+
+
 
 **Why no platform fee in v1?**
 The product's credibility depends on being trustless and neutral. Taking a cut from failures feels extractive and undermines the "accountability partner" framing. Revenue can come later via premium features (custom domains, multi-judge, analytics).
