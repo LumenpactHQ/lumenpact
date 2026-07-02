@@ -264,3 +264,372 @@ impl CommitmentEscrow {
         get_commitment_count(&env)
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use soroban_sdk::{
+        testutils::{Address as _, Ledger},
+        Address, Env, String,
+    };
+
+    fn create_test_env() -> (Env, Address, Address, Address, Address) {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let admin = Address::generate(&env);
+        let creator = Address::generate(&env);
+        let judge = Address::generate(&env);
+        let penalty = Address::generate(&env);
+
+        (env, admin, creator, judge, penalty)
+    }
+
+    #[test]
+    fn test_initialize() {
+        let (env, admin, _, _, _) = create_test_env();
+        let contract_id = env.register(CommitmentEscrow, ());
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+
+        client.initialize(&admin);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_initialize_twice_fails() {
+        let (env, admin, _, _, _) = create_test_env();
+        let contract_id = env.register(CommitmentEscrow, ());
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+
+        client.initialize(&admin);
+        client.initialize(&admin); // should panic
+    }
+
+    #[test]
+    fn test_create_commitment() {
+        let (env, admin, creator, judge, penalty) = create_test_env();
+        let contract_id = env.register(CommitmentEscrow, ());
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+
+        client.initialize(&admin);
+
+        // Set ledger time
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+
+        let token = Address::generate(&env);
+        let deadline = 2000u64;
+        let description = String::from_str(&env, "Ship the landing page by Friday");
+
+        let id = client.create_commitment(
+            &creator,
+            &judge,
+            &token,
+            &100,
+            &deadline,
+            &description,
+            &penalty,
+            &PenaltyType::Friend,
+        );
+
+        assert_eq!(id, 1);
+
+        let commitment = client.get_commitment(&id).unwrap();
+        assert_eq!(commitment.creator, creator);
+        assert_eq!(commitment.judge, judge);
+        assert_eq!(commitment.amount, 100);
+        assert_eq!(commitment.deadline, deadline);
+        assert_eq!(commitment.status, CommitmentStatus::Active);
+        assert_eq!(commitment.outcome, None);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_create_commitment_invalid_amount() {
+        let (env, admin, creator, judge, penalty) = create_test_env();
+        let contract_id = env.register(CommitmentEscrow, ());
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+
+        let token = Address::generate(&env);
+        let description = String::from_str(&env, "Test");
+
+        // Amount 0 should fail
+        client.create_commitment(
+            &creator,
+            &judge,
+            &token,
+            &0,
+            &2000,
+            &description,
+            &penalty,
+            &PenaltyType::Friend,
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_create_commitment_past_deadline() {
+        let (env, admin, creator, judge, penalty) = create_test_env();
+        let contract_id = env.register(CommitmentEscrow, ());
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 5000);
+
+        let token = Address::generate(&env);
+        let description = String::from_str(&env, "Test");
+
+        // Deadline in the past should fail
+        client.create_commitment(
+            &creator,
+            &judge,
+            &token,
+            &100,
+            &1000,
+            &description,
+            &penalty,
+            &PenaltyType::Friend,
+        );
+    }
+
+    #[test]
+    fn test_resolve_pass() {
+        let (env, admin, creator, judge, penalty) = create_test_env();
+        let contract_id = env.register(CommitmentEscrow, ());
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+
+        let token = Address::generate(&env);
+        let description = String::from_str(&env, "Test goal");
+
+        let id = client.create_commitment(
+            &creator,
+            &judge,
+            &token,
+            &100,
+            &2000,
+            &description,
+            &penalty,
+            &PenaltyType::Friend,
+        );
+
+        // Move time past deadline
+        env.ledger().with_mut(|l| l.timestamp = 3000);
+
+        client.resolve(&judge, &id, &token, &true);
+
+        let commitment = client.get_commitment(&id).unwrap();
+        assert_eq!(commitment.status, CommitmentStatus::Resolved);
+        assert_eq!(commitment.outcome, Some(true));
+    }
+
+    #[test]
+    fn test_resolve_fail() {
+        let (env, admin, creator, judge, penalty) = create_test_env();
+        let contract_id = env.register(CommitmentEscrow, ());
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+
+        let token = Address::generate(&env);
+        let description = String::from_str(&env, "Test goal");
+
+        let id = client.create_commitment(
+            &creator,
+            &judge,
+            &token,
+            &100,
+            &2000,
+            &description,
+            &penalty,
+            &PenaltyType::Friend,
+        );
+
+        env.ledger().with_mut(|l| l.timestamp = 3000);
+
+        client.resolve(&judge, &id, &token, &false);
+
+        let commitment = client.get_commitment(&id).unwrap();
+        assert_eq!(commitment.status, CommitmentStatus::Resolved);
+        assert_eq!(commitment.outcome, Some(false));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_resolve_before_deadline_fails() {
+        let (env, admin, creator, judge, penalty) = create_test_env();
+        let contract_id = env.register(CommitmentEscrow, ());
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+
+        let token = Address::generate(&env);
+        let description = String::from_str(&env, "Test goal");
+
+        let id = client.create_commitment(
+            &creator,
+            &judge,
+            &token,
+            &100,
+            &2000,
+            &description,
+            &penalty,
+            &PenaltyType::Friend,
+        );
+
+        // Try to resolve before deadline — should panic
+        client.resolve(&judge, &id, &token, &true);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_resolve_wrong_judge_fails() {
+        let (env, admin, creator, judge, penalty) = create_test_env();
+        let contract_id = env.register(CommitmentEscrow, ());
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+
+        let token = Address::generate(&env);
+        let description = String::from_str(&env, "Test goal");
+        let fake_judge = Address::generate(&env);
+
+        let id = client.create_commitment(
+            &creator,
+            &judge,
+            &token,
+            &100,
+            &2000,
+            &description,
+            &penalty,
+            &PenaltyType::Friend,
+        );
+
+        env.ledger().with_mut(|l| l.timestamp = 3000);
+
+        // Wrong judge should panic
+        client.resolve(&fake_judge, &id, &token, &true);
+    }
+
+    #[test]
+    fn test_cancel_after_grace_period() {
+        let (env, admin, creator, judge, penalty) = create_test_env();
+        let contract_id = env.register(CommitmentEscrow, ());
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+
+        let token = Address::generate(&env);
+        let description = String::from_str(&env, "Test goal");
+
+        let id = client.create_commitment(
+            &creator,
+            &judge,
+            &token,
+            &100,
+            &2000,
+            &description,
+            &penalty,
+            &PenaltyType::Friend,
+        );
+
+        // Move time past deadline + grace period (86400 seconds)
+        env.ledger().with_mut(|l| l.timestamp = 2000 + 86400 + 1);
+
+        client.cancel(&creator, &id, &token);
+
+        let commitment = client.get_commitment(&id).unwrap();
+        assert_eq!(commitment.status, CommitmentStatus::Cancelled);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_cancel_before_grace_period_fails() {
+        let (env, admin, creator, judge, penalty) = create_test_env();
+        let contract_id = env.register(CommitmentEscrow, ());
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+
+        let token = Address::generate(&env);
+        let description = String::from_str(&env, "Test goal");
+
+        let id = client.create_commitment(
+            &creator,
+            &judge,
+            &token,
+            &100,
+            &2000,
+            &description,
+            &penalty,
+            &PenaltyType::Friend,
+        );
+
+        // Try to cancel before grace period ends — should panic
+        env.ledger().with_mut(|l| l.timestamp = 3000);
+        client.cancel(&creator, &id, &token);
+    }
+
+    #[test]
+    fn test_submit_evidence() {
+        let (env, admin, creator, judge, penalty) = create_test_env();
+        let contract_id = env.register(CommitmentEscrow, ());
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+
+        let token = Address::generate(&env);
+        let description = String::from_str(&env, "Test goal");
+
+        let id = client.create_commitment(
+            &creator,
+            &judge,
+            &token,
+            &100,
+            &2000,
+            &description,
+            &penalty,
+            &PenaltyType::Friend,
+        );
+
+        let url = String::from_str(&env, "https://strava.com/activity/123456");
+        client.submit_evidence(&creator, &id, &url);
+
+        let commitment = client.get_commitment(&id).unwrap();
+        assert_eq!(commitment.evidence_url, Some(url));
+    }
+
+    #[test]
+    fn test_get_user_commitments() {
+        let (env, admin, creator, judge, penalty) = create_test_env();
+        let contract_id = env.register(CommitmentEscrow, ());
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+
+        let token = Address::generate(&env);
+        let description = String::from_str(&env, "Test goal");
+
+        client.create_commitment(
+            &creator, &judge, &token, &100, &2000,
+            &description, &penalty, &PenaltyType::Friend,
+        );
+        client.create_commitment(
+            &creator, &judge, &token, &200, &3000,
+            &description, &penalty, &PenaltyType::Burn,
+        );
+
+        let commitments = client.get_user_commitments(&creator);
+        assert_eq!(commitments.len(), 2);
+    }
+}
