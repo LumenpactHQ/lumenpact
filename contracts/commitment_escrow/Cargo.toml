@@ -11,3 +11,4 @@ soroban-sdk = { version = "21.7.6" }
 
 [dev-dependencies]
 soroban-sdk = { version = "21.7.6", features = ["testutils"] }
+soroban-token-sdk = { version = "21.7.6" }

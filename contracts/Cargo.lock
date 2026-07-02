@@ -155,6 +155,7 @@ name = "commitment-escrow"
 version = "0.1.0"
 dependencies = [
  "soroban-sdk",
+ "soroban-token-sdk",
 ]
 
 [[package]]
@@ -1284,6 +1285,15 @@ dependencies = [
  "stellar-xdr",
  "syn",
  "thiserror",
+]
+
+[[package]]
+name = "soroban-token-sdk"
+version = "21.7.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cef8fc7824bc08813ac12ed3af9a73fc1921873b480fff66c7b768c4d40da659"
+dependencies = [
+ "soroban-sdk",
 ]
 
 [[package]]
