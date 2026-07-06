@@ -4,9 +4,9 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "node ./scripts/run-frontend.js dev",
-    "build": "node ./scripts/run-frontend.js build",
-    "start": "node ./scripts/run-frontend.js start",
-    "lint": "node ./scripts/run-frontend.js lint"
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm run start",
+    "lint": "cd frontend && npm run lint"
   }
 }
