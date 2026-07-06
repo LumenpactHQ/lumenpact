@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
+import WalletConnect from "./WalletConnect";
 
 const navItems = [
   { href: "/app", label: "Dashboard", icon: "⬡" },
@@ -51,13 +52,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             {navItems.find((n) => n.href === pathname)?.label ?? "App"}
           </div>
           <div className="app-topbar-right">
-            <div className="wallet-status">
-              <span className="wallet-dot"></span>
-              <span className="wallet-address">Not connected</span>
-            </div>
-            <button className="btn btn-primary" style={{ padding: "9px 20px", fontSize: "13px" }}>
-              Connect Wallet
-            </button>
+            <WalletConnect />
           </div>
         </div>
 
