@@ -467,6 +467,120 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
+    fn test_cancel_after_resolve_fails() {
+        let (env, admin, creator, judge, penalty, token) = create_test_env();
+        let contract_id = env.register_contract(None, CommitmentEscrow);
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+        let description = String::from_str(&env, "Test goal");
+        let id = client.create_commitment(
+            &creator, &judge, &token, &100, &2000,
+            &description, &penalty, &PenaltyType::Friend,
+        );
+        // Resolve the commitment
+        env.ledger().with_mut(|l| l.timestamp = 3000);
+        client.resolve(&judge, &id, &token, &true);
+        // Attempt to cancel after resolved should panic
+        client.cancel(&creator, &id, &token);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_cancel_by_non_creator_fails() {
+        let (env, admin, creator, judge, penalty, token) = create_test_env();
+        let other = Address::generate(&env);
+        let contract_id = env.register_contract(None, CommitmentEscrow);
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+        let description = String::from_str(&env, "Test goal");
+        let id = client.create_commitment(
+            &creator, &judge, &token, &100, &2000,
+            &description, &penalty, &PenaltyType::Friend,
+        );
+        // Advance past grace period
+        env.ledger().with_mut(|l| l.timestamp = 2000 + 86400 + 1);
+        // Non-creator attempts cancellation
+        client.cancel(&other, &id, &token);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_cancel_before_grace_period_fails() {
+        let (env, admin, creator, judge, penalty, token) = create_test_env();
+        let contract_id = env.register_contract(None, CommitmentEscrow);
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+        let description = String::from_str(&env, "Test goal");
+        let id = client.create_commitment(
+            &creator, &judge, &token, &100, &2000,
+            &description, &penalty, &PenaltyType::Friend,
+        );
+        env.ledger().with_mut(|l| l.timestamp = 3000);
+        client.cancel(&creator, &id, &token);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_cancel_after_resolve_fails() {
+        let (env, admin, creator, judge, penalty, token) = create_test_env();
+        let contract_id = env.register_contract(None, CommitmentEscrow);
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+        let description = String::from_str(&env, "Test goal");
+        let id = client.create_commitment(
+            &creator, &judge, &token, &100, &2000,
+            &description, &penalty, &PenaltyType::Friend,
+        );
+        // Resolve the commitment
+        env.ledger().with_mut(|l| l.timestamp = 3000);
+        client.resolve(&judge, &id, &token, &true);
+        // Attempt to cancel after resolved should panic
+        client.cancel(&creator, &id, &token);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_cancel_by_non_creator_fails() {
+        let (env, admin, creator, judge, penalty, token) = create_test_env();
+        let other = Address::generate(&env);
+        let contract_id = env.register_contract(None, CommitmentEscrow);
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+        let description = String::from_str(&env, "Test goal");
+        let id = client.create_commitment(
+            &creator, &judge, &token, &100, &2000,
+            &description, &penalty, &PenaltyType::Friend,
+        );
+        // Advance past grace period
+        env.ledger().with_mut(|l| l.timestamp = 2000 + 86400 + 1);
+        // Non-creator attempts cancellation
+        client.cancel(&other, &id, &token);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_cancel_before_grace_period_fails() {
+        let (env, admin, creator, judge, penalty, token) = create_test_env();
+        let contract_id = env.register_contract(None, CommitmentEscrow);
+        let client = CommitmentEscrowClient::new(&env, &contract_id);
+        client.initialize(&admin);
+        env.ledger().with_mut(|l| l.timestamp = 1000);
+        let description = String::from_str(&env, "Test goal");
+        let id = client.create_commitment(
+            &creator, &judge, &token, &100, &2000,
+            &description, &penalty, &PenaltyType::Friend,
+        );
+        env.ledger().with_mut(|l| l.timestamp = 3000);
+        client.cancel(&creator, &id, &token);
+    }
+
+    #[test]
     fn test_submit_evidence() {
         let (env, admin, creator, judge, penalty, token) = create_test_env();
         let contract_id = env.register_contract(None, CommitmentEscrow);
