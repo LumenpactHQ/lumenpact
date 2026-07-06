@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "node ./scripts/run-frontend.js dev",
+    "build": "node ./scripts/run-frontend.js build",
+    "start": "node ./scripts/run-frontend.js start",
+    "lint": "node ./scripts/run-frontend.js lint"
+  }
+}
