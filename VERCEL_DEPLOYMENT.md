@@ -2,10 +2,10 @@
 
 ## 1. Project settings
 - Import the repository into Vercel.
-- Set the Root Directory to `frontend`.
+- Keep the Root Directory at the repository root so Vercel uses the configuration in `vercel.json`.
 - Framework preset: Next.js.
-- Build command: `npm run build`.
-- Output directory: `.next`.
+- Build command: `npm run build --prefix frontend`.
+- Output directory: `frontend/.next`.
 
 ## 2. Environment variables
 Add these in Vercel Project Settings → Environment Variables:
