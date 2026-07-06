@@ -1,26 +1,64 @@
-export async function connectWallet() {
+export type WalletProvider = "freighter" | "xbull" | "albedo";
+
+type WalletApi = {
+  isConnected?: () => Promise<boolean>;
+  getPublicKey?: () => Promise<string>;
+  publicKey?: () => Promise<string>;
+};
+
+async function tryProvider(provider: WalletProvider): Promise<string | null> {
   if (typeof window === "undefined") {
     return null;
   }
 
-  if (!(window as Window & { freighter?: { isConnected?: () => Promise<boolean>; getPublicKey?: () => Promise<string> } }).freighter) {
+  const win = window as Window & {
+    freighter?: WalletApi;
+    xBull?: WalletApi;
+    xbull?: WalletApi;
+    albedo?: WalletApi;
+  };
+
+  let wallet: WalletApi | undefined;
+
+  if (provider === "freighter") {
+    wallet = win.freighter;
+  } else if (provider === "xbull") {
+    wallet = win.xBull ?? win.xbull;
+  } else if (provider === "albedo") {
+    wallet = win.albedo;
+  }
+
+  if (!wallet) {
     return null;
   }
 
   try {
-    const freighter = (window as Window & { freighter?: { isConnected?: () => Promise<boolean>; getPublicKey?: () => Promise<string> } }).freighter;
-    if (!freighter) {
-      return null;
+    if (provider === "albedo") {
+      const publicKey = await wallet.publicKey?.();
+      return publicKey ?? null;
     }
 
-    const connected = (await freighter.isConnected?.()) ?? false;
+    const connected = wallet.isConnected ? await wallet.isConnected() : true;
     if (!connected) {
       return null;
     }
 
-    const publicKey = await freighter.getPublicKey?.();
+    const publicKey = await wallet.getPublicKey?.();
     return publicKey ?? null;
   } catch {
     return null;
   }
+}
+
+export async function connectWallet(provider?: WalletProvider) {
+  const providers: WalletProvider[] = provider ? [provider] : ["freighter", "xbull", "albedo"];
+
+  for (const candidate of providers) {
+    const publicKey = await tryProvider(candidate);
+    if (publicKey) {
+      return publicKey;
+    }
+  }
+
+  return null;
 }

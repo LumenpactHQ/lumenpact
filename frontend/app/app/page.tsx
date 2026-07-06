@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import AppLayout from "@/components/AppLayout";
 import Link from "next/link";
+import { connectWallet, WalletProvider } from "@/lib/wallet";
 
 const stats = [
   { label: "Active Commitments", value: "0", icon: "🔒", color: "var(--orange)" },
@@ -8,7 +12,29 @@ const stats = [
   { label: "Completed", value: "0", icon: "✅", color: "#14a060" },
 ];
 
+const walletOptions: { id: WalletProvider; label: string; description: string; icon: string }[] = [
+  { id: "freighter", label: "Freighter", description: "Recommended", icon: "🪐" },
+  { id: "xbull", label: "xBull", description: "Mobile & Desktop", icon: "🐂" },
+  { id: "albedo", label: "Albedo", description: "Web-based", icon: "🔑" },
+];
+
 export default function AppDashboard() {
+  const [status, setStatus] = useState("Not connected");
+  const [address, setAddress] = useState<string | null>(null);
+
+  async function handleWalletConnect(provider: WalletProvider) {
+    setStatus(`Connecting ${provider}...`);
+    const publicKey = await connectWallet(provider);
+
+    if (!publicKey) {
+      setStatus(`Could not connect with ${provider}. Check that the wallet is installed and authorized.`);
+      return;
+    }
+
+    setAddress(publicKey);
+    setStatus(`Connected with ${provider}`);
+  }
+
   return (
     <AppLayout>
       {/* Connect wallet gate */}
@@ -21,28 +47,29 @@ export default function AppDashboard() {
             and act as a judge. Freighter, xBull, and Albedo are supported.
           </p>
           <div className="wallet-options">
-            <button className="wallet-option-btn">
-              <span className="wallet-option-icon">🪐</span>
-              <div>
-                <strong>Freighter</strong>
-                <span>Recommended</span>
-              </div>
-            </button>
-            <button className="wallet-option-btn">
-              <span className="wallet-option-icon">🐂</span>
-              <div>
-                <strong>xBull</strong>
-                <span>Mobile &amp; Desktop</span>
-              </div>
-            </button>
-            <button className="wallet-option-btn">
-              <span className="wallet-option-icon">🔑</span>
-              <div>
-                <strong>Albedo</strong>
-                <span>Web-based</span>
-              </div>
-            </button>
+            {walletOptions.map((wallet) => (
+              <button
+                key={wallet.id}
+                type="button"
+                className="wallet-option-btn"
+                onClick={() => handleWalletConnect(wallet.id)}
+              >
+                <span className="wallet-option-icon">{wallet.icon}</span>
+                <div>
+                  <strong>{wallet.label}</strong>
+                  <span>{wallet.description}</span>
+                </div>
+              </button>
+            ))}
           </div>
+          <div style={{ marginTop: 20, color: "var(--gray)", fontSize: 14 }}>
+            {status}
+          </div>
+          {address && (
+            <div style={{ marginTop: 8, fontFamily: "monospace", fontSize: 13 }}>
+              {address}
+            </div>
+          )}
         </div>
 
         {/* Stats preview (empty state) */}
