@@ -2,37 +2,98 @@
 
 import AppLayout from "@/components/AppLayout";
 import { useState } from "react";
+import { useWallet } from "@/lib/wallet-context";
+import { createCommitment } from "@/lib/contract";
+import type { CreateCommitmentInput } from "@/lib/types";
 
 type Step = 1 | 2 | 3;
 
 const PENALTY_OPTIONS = [
   { id: "burn", label: "Burn address", desc: "Funds are destroyed — max accountability", icon: "🔥" },
-  { id: "charity", label: "Charity wallet", desc: "Goes to a Stellar charity address", icon: "🌍" },
   { id: "friend", label: "Friend's wallet", desc: "Send to an address you specify", icon: "👤" },
 ];
 
 export default function CreateCommitmentPage() {
+  const { address, sign, status } = useWallet();
   const [step, setStep] = useState<Step>(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [createdId, setCreatedId] = useState<number | null>(null);
   const [form, setForm] = useState({
     goal: "",
     deadline: "",
     stake: "",
     judgeAddress: "",
-    penaltyType: "burn",
+    penaltyType: "burn" as "burn" | "friend",
     penaltyAddress: "",
   });
 
   const update = (key: string, val: string) =>
     setForm((f) => ({ ...f, [key]: val }));
 
-  const canNext1 = form.goal.trim() && form.deadline && form.stake;
-  const canNext2 = form.judgeAddress.trim();
+  const canNext1 = form.goal.trim() && form.deadline && parseFloat(form.stake) > 0;
+  const canNext2 =
+    form.judgeAddress.trim().startsWith("G") && form.judgeAddress.length > 10;
+
+  async function handleSubmit() {
+    if (!address) {
+      setError("Connect your wallet first.");
+      return;
+    }
+    if (form.penaltyType === "friend" && !form.penaltyAddress.trim()) {
+      setError("Enter the friend's wallet address.");
+      return;
+    }
+
+    const deadlineUnix = Math.floor(new Date(form.deadline).getTime() / 1000);
+    if (!deadlineUnix || Number.isNaN(deadlineUnix)) {
+      setError("Invalid deadline.");
+      return;
+    }
+
+    const input: CreateCommitmentInput = {
+      goal: form.goal.trim(),
+      deadlineUnix,
+      stake: form.stake,
+      judge: form.judgeAddress.trim(),
+      penaltyType: form.penaltyType,
+      penaltyAddress: form.penaltyAddress.trim(),
+    };
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      await createCommitment(input, address, sign);
+      // The id is assigned sequentially; we don't get it back from submit.
+      // Reload the user's commitments to surface the new one.
+      setCreatedId(-1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Transaction failed.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (createdId === -1) {
+    return (
+      <AppLayout>
+        <div className="create-card">
+          <div className="review-warning" style={{ borderColor: "#14a060", color: "#14a060" }}>
+            ✅ Commitment submitted! Your XLM is now locked in the contract.
+          </div>
+          <div className="create-actions">
+            <a href="/app/my-commitments" className="btn btn-primary">
+              View my commitments →
+            </a>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
       <div className="create-page">
-
-        {/* Progress steps */}
         <div className="create-steps">
           {[
             { n: 1, label: "Goal & Stake" },
@@ -50,8 +111,6 @@ export default function CreateCommitmentPage() {
         </div>
 
         <div className="create-card">
-
-          {/* ── STEP 1: Goal & Stake ── */}
           {step === 1 && (
             <div className="create-form-step">
               <div className="create-step-header">
@@ -70,7 +129,7 @@ export default function CreateCommitmentPage() {
                   value={form.goal}
                   onChange={(e) => update("goal", e.target.value)}
                 />
-                <div className="form-hint">Write it as if you're telling your judge exactly what you'll do.</div>
+                <div className="form-hint">Write it as if you&apos;re telling your judge exactly what you&apos;ll do.</div>
               </div>
 
               <div className="form-row">
@@ -98,7 +157,7 @@ export default function CreateCommitmentPage() {
                     />
                     <span className="form-suffix">XLM</span>
                   </div>
-                  <div className="form-hint">Minimum 1 XLM · 2% platform fee applies on resolution</div>
+                  <div className="form-hint">Minimum 1 XLM. No platform fee.</div>
                 </div>
               </div>
 
@@ -145,7 +204,6 @@ export default function CreateCommitmentPage() {
             </div>
           )}
 
-          {/* ── STEP 2: Judge ── */}
           {step === 2 && (
             <div className="create-form-step">
               <div className="create-step-header">
@@ -201,13 +259,12 @@ export default function CreateCommitmentPage() {
             </div>
           )}
 
-          {/* ── STEP 3: Review & Confirm ── */}
           {step === 3 && (
             <div className="create-form-step">
               <div className="create-step-header">
                 <div className="create-step-badge">Step 3 of 3</div>
                 <h2>Review & lock in.</h2>
-                <p>Once submitted, this commitment is on-chain and cannot be cancelled.</p>
+                <p>Once submitted, this commitment is on-chain and cannot be cancelled before the grace period.</p>
               </div>
 
               <div className="review-card">
@@ -234,17 +291,9 @@ export default function CreateCommitmentPage() {
                 </div>
                 <div className="review-divider" />
                 <div className="review-row">
-                  <span className="review-label">Platform fee</span>
-                  <span className="review-value review-fee">
-                    {form.stake ? `${(parseFloat(form.stake) * 0.02).toFixed(2)} XLM (2%)` : "—"}
-                  </span>
-                </div>
-                <div className="review-divider" />
-                <div className="review-row">
-                  <span className="review-label">Penalty address</span>
+                  <span className="review-label">Penalty</span>
                   <span className="review-value">
                     {form.penaltyType === "burn" && "🔥 Burn address"}
-                    {form.penaltyType === "charity" && "🌍 Charity wallet"}
                     {form.penaltyType === "friend" && `👤 ${form.penaltyAddress || "Not set"}`}
                   </span>
                 </div>
@@ -262,15 +311,25 @@ export default function CreateCommitmentPage() {
                 Soroban smart contract until the deadline passes and your judge issues a verdict.
               </div>
 
+              {error && <div className="app-error-banner">{error}</div>}
+              {!address && (
+                <div className="form-hint">⚠️ {status} — connect your wallet to submit.</div>
+              )}
+
               <div className="create-actions">
-                <button className="btn btn-ghost" onClick={() => setStep(2)}>← Back</button>
-                <button className="btn btn-primary">
-                  🔒 Lock {form.stake} XLM — Submit Commitment
+                <button className="btn btn-ghost" onClick={() => setStep(2)} disabled={submitting}>← Back</button>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSubmit}
+                  disabled={submitting || !address}
+                >
+                  {submitting
+                    ? "Submitting…"
+                    : `🔒 Lock ${form.stake} XLM — Submit Commitment`}
                 </button>
               </div>
             </div>
           )}
-
         </div>
       </div>
     </AppLayout>

@@ -12,5 +12,4 @@ pub enum CommitmentError {
     CommitmentNotActive = 7,
     InvalidAmount = 8,
     InvalidDeadline = 9,
-    AlreadyResolved = 10,
 }

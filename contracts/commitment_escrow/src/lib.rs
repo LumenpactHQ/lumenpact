@@ -44,6 +44,10 @@ impl CommitmentEscrow {
     ) -> Result<u64, CommitmentError> {
         creator.require_auth();
 
+        if get_admin(&env).is_none() {
+            return Err(CommitmentError::NotInitialized);
+        }
+
         if amount <= 0 {
             return Err(CommitmentError::InvalidAmount);
         }
@@ -174,10 +178,17 @@ impl CommitmentEscrow {
                 &commitment.amount,
             );
         } else {
-            // Send stake to penalty address
+            // Send stake to the penalty destination.
+            // For `Burn`, funds are sent to the provably unspendable burn
+            // address regardless of the `penalty_address` supplied at creation.
+            let destination = if commitment.penalty_type == PenaltyType::Burn {
+                Address::from_string(&String::from_str(&env, BURN_ADDRESS))
+            } else {
+                commitment.penalty_address.clone()
+            };
             token_client.transfer(
                 &env.current_contract_address(),
-                &commitment.penalty_address,
+                &destination,
                 &commitment.amount,
             );
         }
