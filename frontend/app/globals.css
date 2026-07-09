@@ -1419,3 +1419,21 @@ nav.nav-scrolled {
 .commitments-empty strong { display: block; font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
 .commitments-empty p { font-size: 14px; margin: 0 auto; }
 
+/* Lumenpact — added utility classes */
+.app-error-banner {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(220, 53, 69, 0.12);
+  border: 1px solid rgba(220, 53, 69, 0.45);
+  color: #dc3545;
+  font-size: 14px;
+}
+.commitment-cancel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(43, 26, 19, 0.12);
+}

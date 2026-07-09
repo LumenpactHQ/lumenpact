@@ -1,8 +1,5 @@
 import { scValToNative, xdr } from "@stellar/stellar-sdk";
 import {
-  CONTRACT_ID,
-  XLM_CONTRACT_ID,
-  BURN_ADDRESS,
   readOnly,
   sendTx,
   toAddressScVal,
@@ -11,7 +8,9 @@ import {
   toStr,
   toBool,
   toEnum,
-  firstOrNull,
+  CONTRACT_ID,
+  XLM_CONTRACT_ID,
+  BURN_ADDRESS,
 } from "./stellar";
 import {
   xlmToStroops,
@@ -20,11 +19,23 @@ import {
   type PenaltyType,
 } from "./types";
 
+// `Option<T>` decodes to `null` for None, the raw value for Some.
+function decodeOption<T>(raw: unknown): T | null {
+  if (raw === null || raw === undefined) return null;
+  if (Array.isArray(raw)) return raw.length ? ((raw[0] as T) ?? null) : null;
+  return raw as T;
+}
+
 function decodeCommitment(scVal: xdr.ScVal | null): Commitment | null {
   if (!scVal) return null;
 
-  // Option<Commitment> serializes as a Vec (Some => [value], None => []).
-  if (scVal.switch().name === "scvVec") {
+  const tag = scVal.switch().name;
+
+  // None is encoded as `void`.
+  if (tag === "scvVoid") return null;
+
+  // Some variants may be wrapped in a Vec ([value]) — unwrap if so.
+  if (tag === "scvVec") {
     const arr = scValToNative(scVal) as unknown[];
     if (!arr.length) return null;
     return decodeCommitment(arr[0] as xdr.ScVal);
@@ -38,9 +49,10 @@ function decodeCommitment(scVal: xdr.ScVal | null): Commitment | null {
   const rawStatus = Array.isArray(m.status)
     ? (m.status[0] as Commitment["status"])
     : (m.status as Commitment["status"]);
-  const rawOutcome = firstOrNull(m.outcome as boolean[] | undefined);
-  const rawEvidence = firstOrNull(m.evidence_url as string[] | undefined);
-  const rawResolved = firstOrNull(m.resolved_at as number[] | undefined);
+  // Option fields: `null` => None, raw value => Some.
+  const rawOutcome = decodeOption<boolean>(m.outcome);
+  const rawEvidence = decodeOption<string>(m.evidence_url);
+  const rawResolved = decodeOption<number>(m.resolved_at);
 
   return {
     id: Number(m.id),

@@ -22,7 +22,7 @@ export default function StellarBar() {
               <h2>Built on Stellar. Native speed, near-zero fees.</h2>
               <p>
                 Lumenpact runs on Soroban smart contracts — Stellar&apos;s
-                EVM-compatible execution layer. Your stake is locked on-chain,
+                native smart-contract platform. Your stake is locked on-chain,
                 your judge resolves on-chain, every transfer settles in five
                 seconds.
               </p>

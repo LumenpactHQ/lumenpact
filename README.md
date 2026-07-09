@@ -122,7 +122,7 @@ Judge never responds? → User can cancel after grace period → refund
 
 ### Inter-Contract Call Flow
 
-**Create Commitment:** User calls `create_commitment(judge, amount, deadline, description, penalty_address, penalty_type)` → XLM transferred to escrow contract → commitment stored on-chain with status `ACTIVE`
+**Create Commitment:** User calls `create_commitment(creator, judge, token_address, amount, deadline, description, penalty_address, penalty_type)` → XLM transferred to escrow contract → commitment stored on-chain with status `ACTIVE`
 
 **Resolve:** Judge calls `resolve(commitment_id, passed: bool)` → contract checks caller is designated judge and deadline has passed → if `passed`: XLM returned to creator → if `!passed`: XLM sent to `penalty_address` → status updated to `RESOLVED`
 
@@ -231,7 +231,7 @@ Oracle infrastructure requires a trusted off-chain verifier, signed payloads, an
 
 | Function | Description | Version |
 |----------|-------------|---------|
-| `create_commitment(user, judge, amount, deadline, description, penalty_address, penalty_type)` | Lock XLM, store goal, assign judge and penalty destination | v1 |
+| `create_commitment(creator, judge, token_address, amount, deadline, description, penalty_address, penalty_type)` | Lock XLM, store goal, assign judge and penalty destination | v1 |
 | `resolve(judge, commitment_id, passed)` | Judge calls Pass or Fail — executes transfer immediately | v1 |
 | `cancel(user, commitment_id)` | Creator cancels after grace period if judge never resolved | v1 |
 | `get_commitment(commitment_id)` | Read full commitment data | v1 |
@@ -289,8 +289,8 @@ No platform fee in v1. The product is the accountability, not the cut.
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| **Smart Contracts** | Rust + Soroban SDK | 1.96.1 / 21.7.6 |
-| **Frontend** | Next.js (App Router) | 14.x |
+| **Smart Contracts** | Rust + Soroban SDK | 21.7.6 |
+| **Frontend** | Next.js (App Router) | 16.x |
 | **UI** | React + Tailwind CSS | 18.x / 3.4.x |
 | **Language** | TypeScript | 5.x |
 | **Wallet** | Stellar Wallets Kit | Freighter, xBull, Albedo |

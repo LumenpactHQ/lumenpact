@@ -12,7 +12,6 @@ import {
   scValToNative,
 } from "@stellar/stellar-sdk";
 import { appConfig } from "./config";
-import type { PenaltyType } from "./types";
 
 export const NETWORK_PASSPHRASE =
   appConfig.network === "mainnet" ? Networks.PUBLIC : Networks.TESTNET;
@@ -54,15 +53,6 @@ export function toEnum(name: string): xdr.ScVal {
   return xdr.ScVal.scvVec([xdr.ScVal.scvSymbol(name)]);
 }
 
-export function penaltyTypeToEnum(type: PenaltyType): xdr.ScVal {
-  return toEnum(type);
-}
-
-function firstOrNull<T>(value: T[] | undefined): T | null {
-  return Array.isArray(value) && value.length > 0 ? value[0] : null;
-}
-
-// ── Read-only invocation (simulate) ─────────────────────────────
 export async function readOnly(
   fn: string,
   args: xdr.ScVal[]
@@ -120,28 +110,22 @@ export async function sendTx(
 
   const sim = (await server.simulateTransaction(
     tx as never
-  )) as unknown as SimResult;
+  )) as SimResult;
 
   if (sim.error) {
     throw new Error(`Simulation failed: ${sim.error}`);
   }
-  if (!sim.transaction) {
-    throw new Error("Simulation did not return a transaction to sign.");
-  }
 
-  const prepared = TransactionBuilder.fromXDR(
-    sim.transaction,
-    NETWORK_PASSPHRASE
-  ) as unknown as TransactionLike;
-
-  const signedXdr = await sign(prepared.toXDR());
+  // Attach the simulated footprint/auth, then sign and submit.
+  const prepared = rpc.assembleTransaction(tx as never, sim as never);
+  const signedXdr = await sign(prepared.build().toXDR());
   const signed = TransactionBuilder.fromXDR(
     signedXdr,
     NETWORK_PASSPHRASE
-  ) as unknown as TransactionLike;
+  );
 
   const sendRes = await server.sendTransaction(signed as never);
-  if (sendRes.status === "FAILED") {
+  if (sendRes.status === "ERROR") {
     throw new Error("Transaction was rejected by the network.");
   }
 
@@ -169,13 +153,8 @@ async function pollTransaction(hash: string): Promise<rpc.Api.GetTransactionResp
 // ── Minimal structural types for the simulation result ──────────
 interface SimResult {
   error?: string;
-  transaction?: string;
   result?: { retval?: xdr.ScVal };
   results?: { retval?: xdr.ScVal }[];
 }
 
-interface TransactionLike {
-  toXDR(): string;
-}
-
-export { scValToNative, firstOrNull };
+export { scValToNative };

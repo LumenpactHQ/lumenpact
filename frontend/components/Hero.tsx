@@ -45,8 +45,8 @@ export default function Hero() {
 
             <div className="hero-stats">
               <div className="stat-item">
-                <span className="stat-num">2%</span>
-                <span className="stat-label">Total fees (max)</span>
+                <span className="stat-num">0%</span>
+                <span className="stat-label">Platform fee</span>
               </div>
               <div className="stat-item">
                 <span className="stat-num">5s</span>

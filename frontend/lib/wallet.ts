@@ -14,7 +14,7 @@ type XBullApi = {
 };
 
 type AlbedoApi = {
-  publicKey?: (opts?: {}) => Promise<{ pubkey: string }>;
+  publicKey?: (opts?: unknown) => Promise<{ pubkey: string }>;
   tx?: (opts: { xdr: string; network?: string }) => Promise<{ xdr: string }>;
 };
 
