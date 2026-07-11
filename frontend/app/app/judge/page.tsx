@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import AppLayout from "@/components/AppLayout";
 import { useEffect, useState } from "react";
@@ -42,6 +42,7 @@ export default function JudgeInboxPage() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address]);
