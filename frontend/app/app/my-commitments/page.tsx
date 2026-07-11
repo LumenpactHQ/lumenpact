@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import AppLayout from "@/components/AppLayout";
 import Link from "next/link";
@@ -55,6 +55,7 @@ export default function MyCommitmentsPage() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address]);

@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import {
   createContext,
@@ -31,8 +31,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const saved = window.localStorage.getItem("lumenpact.wallet");
     if (!saved) return;
     const parsed = JSON.parse(saved) as { address: string; provider: WalletProvider };
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAddress(parsed.address);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProvider(parsed.provider);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus(`Connected with ${parsed.provider}`);
   }, []);
 

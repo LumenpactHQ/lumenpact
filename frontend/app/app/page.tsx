@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import { useEffect, useState } from "react";
 import AppLayout from "@/components/AppLayout";
@@ -26,7 +26,9 @@ export default function AppDashboard() {
   useEffect(() => {
     if (!address) return;
     let active = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setError(null);
     Promise.all([getUserCommitments(address), getJudgeCommitments(address)])
       .then(([mine, assigned]) => {
