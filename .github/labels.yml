@@ -1,0 +1,18 @@
+bug:
+  color: d73a4a
+  description: Something is not working
+enhancement:
+  color: a2eeef
+  description: New feature or request
+documentation:
+  color: 0075ca
+  description: Improvements or additions to docs
+security:
+  color: b60205
+  description: Security-sensitive issue
+help wanted:
+  color: 008672
+  description: Extra attention is needed
+good first issue:
+  color:7057ff
+  description: Good for newcomers

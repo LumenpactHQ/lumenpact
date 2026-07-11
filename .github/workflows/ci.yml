@@ -35,8 +35,8 @@ jobs:
         working-directory: contracts
         run: cargo test
 
-  frontend-build:
-    name: Frontend Build (Node.js)
+  frontend-lint-and-build:
+    name: Frontend Lint and Build (Node.js)
     runs-on: ubuntu-latest
 
     steps:
@@ -49,11 +49,12 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        working-directory: frontend
         run: npm install
 
+      - name: Lint frontend
+        run: npm run lint
+
       - name: Build frontend
-        working-directory: frontend
         run: npm run build
         env:
           NEXT_PUBLIC_NETWORK: testnet

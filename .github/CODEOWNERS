@@ -1,0 +1,8 @@
+# Default ownership
+* @LumenpactHQ/maintainers
+
+# Contract ownership
+contracts/ @LumenpactHQ/maintainers
+
+# Frontend ownership
+frontend/ @LumenpactHQ/maintainers
