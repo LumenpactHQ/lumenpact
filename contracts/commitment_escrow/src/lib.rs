@@ -292,12 +292,13 @@ mod tests {
         let judge = Address::generate(&env);
         let penalty = Address::generate(&env);
         let token_admin = Address::generate(&env);
-        let token = env.register_stellar_asset_contract(token_admin);
+        let token = env.register_stellar_asset_contract_v2(token_admin);
+        let token_address = token.address();
 
-        let token_client = soroban_sdk::token::StellarAssetClient::new(&env, &token);
+        let token_client = soroban_sdk::token::StellarAssetClient::new(&env, &token_address);
         token_client.mint(&creator, &10000);
 
-        (env, admin, creator, judge, penalty, token)
+        (env, admin, creator, judge, penalty, token_address)
     }
 
     #[test]
